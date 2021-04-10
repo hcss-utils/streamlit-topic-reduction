@@ -2,6 +2,8 @@
 
 This repository contains **streamlit** app that illustrates Top2Vec's hierarchical topic reduction method. 
 
+![alt text](data/example.png)
+
 ## Usage
 
 To use or contribute to this repository, first checkout the code. 
