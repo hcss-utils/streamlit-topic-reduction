@@ -109,7 +109,7 @@ num_topic = st.sidebar.slider("Number of topics", min_value=2, max_value=20, ste
 st.sidebar.markdown("""
 You can also use different approaches to plotting:
 * matplotlib
-* datashader (for when you have lots of points)
+* datashader (for large datasets)
 """)
 plotting_method = st.sidebar.selectbox("Select plotting method", ("matplotlib", "datashader"))
 
