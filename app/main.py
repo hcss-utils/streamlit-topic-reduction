@@ -9,7 +9,9 @@ from matplotlib.patches import Patch
 from pathlib import Path
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
-root = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent
+XRANGE = (0, 20)
+YRANGE = (-7.5, 12)
 
 
 def _to_hex(arr):
@@ -42,6 +44,7 @@ def points(
     data,
     num_topics,
     plotting_method,
+    zooming,
     width=800, 
     height=800,
 ):
@@ -58,7 +61,7 @@ def points(
         plt.get_cmap("Spectral")(np.linspace(0, 1, num_labels))
     )
     legend_elements = [
-        Patch(facecolor=color_key[i], label=k)
+        Patch(facecolor=color_key[i], label=k+1)
         for i, k in enumerate(sorted(unique_labels))
     ]
 
@@ -69,18 +72,21 @@ def points(
         }
         colors = df["reduced_topics"].map(new_color_key)
         ax.scatter(df["x"], df["y"], s=point_size, c=colors)
+        if zooming:
+            plt.xlim(XRANGE)
+            plt.ylim(YRANGE)
     else:
         extent = _get_extent(df[["x", "y"]].values)
         cvs = ds.Canvas(
             plot_width=width,
             plot_height=height,
-            x_range=(extent[0], extent[1]),
-            y_range=(extent[2], extent[3]),
+            x_range = XRANGE if zooming else (extent[0], extent[1]),
+            y_range = YRANGE if zooming else (extent[2], extent[3])
         )
         agg = cvs.points(df, "x", "y", agg=ds.count_cat("reduced_topics"))
         result = ds.tf.shade(agg, color_key=color_key, how="eq_hist")
         img_rgba = result.data.view(np.uint8).reshape(result.shape + (4,))
-        ax.imshow(img_rgba, extent=extent)
+        ax.imshow(img_rgba[::-1], extent=extent)
 
     ax.set_title(f"Reduced 2D embeddings: {num_topics} labeled topics")
     ax.legend(handles=legend_elements)
@@ -89,19 +95,17 @@ def points(
 
 @st.cache
 def load_model(path="data/topic-reduction.csv"):
-    return pd.read_csv(root.parent / path)
+    return pd.read_csv(ROOT.parent / path)
 
 
-st.title("Hierarchical topic reduction [top2vec]")
+st.title("Hierarchical topic reduction")
 st.write("""
 We used Top2Vec algorithm to automatically detect topics 
 present in our ProQuest Deterrence dataset containing 26,525 non-empty documents. 
 
-The model initially found 229 topics which is too much to interpret. Because of it, 
+The model initially found 229 topics which is too much to interpret. Thus, 
 we decided to reduce the number of topics using top2vec's hierarchical topic reduction method.
-
-To decide on the optimal number of topics, we visualize embeddings 
-so that we could see clusters of documents""")
+""")
 
 st.sidebar.markdown("## Controls")
 st.sidebar.markdown("You can **change** the values to change the *chart*.")
@@ -113,6 +117,9 @@ You can also use different approaches to plotting:
 """)
 plotting_method = st.sidebar.selectbox("Select plotting method", ("matplotlib", "datashader"))
 
+st.sidebar.markdown("To *zoom in*, fill checkbox below")
+zoom = st.sidebar.checkbox("Zoomed in")
+
 df = load_model()
-plot = points(df, num_topic, plotting_method)
+plot = points(df, num_topic, plotting_method, zoom)
 st.pyplot(plot)
