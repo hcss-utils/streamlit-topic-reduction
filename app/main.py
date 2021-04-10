@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -30,7 +31,7 @@ def points(
     point_size = 100.0 / np.sqrt(df.shape[0])
     
     dpi = plt.rcParams["figure.dpi"] 
-    fig = plt.figure(figsize=(800 / dpi, 800 / dpi))
+    fig = plt.figure(figsize=(width / dpi, height / dpi))
     ax = fig.add_subplot(111) 
     
     unique_labels = df["reduced_topics"].unique()
@@ -55,7 +56,6 @@ def points(
     ax.margins(x=0, y=-.2)
     ax.set(xticks=[], yticks=[])
     
-
 
 @st.cache
 def load_model(path="data/topic-reduction.csv"):
