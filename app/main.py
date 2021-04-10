@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+import datashader as ds
 import matplotlib.colors
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
@@ -15,15 +16,32 @@ def _to_hex(arr):
     return [matplotlib.colors.to_hex(c) for c in arr]
 
 
+def _get_extent(points):
+    min_x = np.min(points[:, 0])
+    max_x = np.max(points[:, 0])
+    min_y = np.min(points[:, 1])
+    max_y = np.max(points[:, 1])
+
+    extent = (
+        np.round(min_x - 0.05 * (max_x - min_x)),
+        np.round(max_x + 0.05 * (max_x - min_x)),
+        np.round(min_y - 0.05 * (max_y - min_y)),
+        np.round(max_y + 0.05 * (max_y - min_y)),
+    )
+    return extent
+
+
 def _select_dist(data, num):
     df = data.rename(columns={f"doc_top_reduced_{num}": "reduced_topics"}).copy()
     df = df.loc[:, ~df.columns.str.contains("doc_top_reduced_")]
     df["reduced_topics"] = pd.Categorical(df["reduced_topics"])
     return df
 
+
 def points(
     data,
     num_topics,
+    plotting_method,
     width=800, 
     height=800,
 ):
@@ -32,30 +50,42 @@ def points(
     
     dpi = plt.rcParams["figure.dpi"] 
     fig = plt.figure(figsize=(width / dpi, height / dpi))
-    ax = fig.add_subplot(111) 
-    
+    ax = fig.add_subplot(111)    
+
     unique_labels = df["reduced_topics"].unique()
     num_labels = unique_labels.shape[0]
     color_key = _to_hex(
         plt.get_cmap("Spectral")(np.linspace(0, 1, num_labels))
     )
-    new_color_key = {
-        k: matplotlib.colors.to_hex(color_key[i])
-        for i, k in enumerate(sorted(unique_labels))
-    }
     legend_elements = [
         Patch(facecolor=color_key[i], label=k)
         for i, k in enumerate(sorted(unique_labels))
     ]
-    
-    colors = df["reduced_topics"].map(new_color_key)
-    
-    ax.scatter(df["x"], df["y"], s=point_size, c=colors)
+
+    if plotting_method == "matplotlib":
+        new_color_key = {
+            k: matplotlib.colors.to_hex(color_key[i])
+            for i, k in enumerate(sorted(unique_labels))
+        }
+        colors = df["reduced_topics"].map(new_color_key)
+        ax.scatter(df["x"], df["y"], s=point_size, c=colors)
+    else:
+        extent = _get_extent(df[["x", "y"]].values)
+        cvs = ds.Canvas(
+            plot_width=width,
+            plot_height=height,
+            x_range=(extent[0], extent[1]),
+            y_range=(extent[2], extent[3]),
+        )
+        agg = cvs.points(df, "x", "y", agg=ds.count_cat("reduced_topics"))
+        result = ds.tf.shade(agg, color_key=color_key, how="eq_hist")
+        img_rgba = result.data.view(np.uint8).reshape(result.shape + (4,))
+        ax.imshow(img_rgba, extent=extent)
+
     ax.set_title(f"Reduced 2D embeddings: {num_topics} labeled topics")
     ax.legend(handles=legend_elements)
-    ax.margins(x=0, y=-.2)
     ax.set(xticks=[], yticks=[])
-    
+
 
 @st.cache
 def load_model(path="data/topic-reduction.csv"):
@@ -76,7 +106,13 @@ so that we could see clusters of documents""")
 st.sidebar.markdown("## Controls")
 st.sidebar.markdown("You can **change** the values to change the *chart*.")
 num_topic = st.sidebar.slider("Number of topics", min_value=2, max_value=20, step=1)
+st.sidebar.markdown("""
+You can also use different approaches to plotting:
+* matplotlib
+* datashader (for large datasets)
+""")
+plotting_method = st.sidebar.selectbox("Select plotting method", ("matplotlib", "datashader"))
 
 df = load_model()
-plot = points(df, num_topic)
+plot = points(df, num_topic, plotting_method)
 st.pyplot(plot)
