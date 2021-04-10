@@ -61,7 +61,7 @@ def points(
         plt.get_cmap("Spectral")(np.linspace(0, 1, num_labels))
     )
     legend_elements = [
-        Patch(facecolor=color_key[i], label=k)
+        Patch(facecolor=color_key[i], label=k+1)
         for i, k in enumerate(sorted(unique_labels))
     ]
 
@@ -98,16 +98,14 @@ def load_model(path="data/topic-reduction.csv"):
     return pd.read_csv(ROOT.parent / path)
 
 
-st.title("Hierarchical topic reduction [top2vec]")
+st.title("Hierarchical topic reduction")
 st.write("""
 We used Top2Vec algorithm to automatically detect topics 
 present in our ProQuest Deterrence dataset containing 26,525 non-empty documents. 
 
-The model initially found 229 topics which is too much to interpret. Because of it, 
+The model initially found 229 topics which is too much to interpret. Thus, 
 we decided to reduce the number of topics using top2vec's hierarchical topic reduction method.
-
-To decide on the optimal number of topics, we visualize embeddings 
-so that we could see clusters of documents""")
+""")
 
 st.sidebar.markdown("## Controls")
 st.sidebar.markdown("You can **change** the values to change the *chart*.")
@@ -119,7 +117,7 @@ You can also use different approaches to plotting:
 """)
 plotting_method = st.sidebar.selectbox("Select plotting method", ("matplotlib", "datashader"))
 
-st.sidebar.markdown("To zoom in, fill checkbox below")
+st.sidebar.markdown("To *zoom in*, fill checkbox below")
 zoom = st.sidebar.checkbox("Zoomed in")
 
 df = load_model()
