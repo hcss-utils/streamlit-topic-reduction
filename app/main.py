@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 from pathlib import Path
 
-st.set_option('deprecation.showPyplotGlobalUse', False)
+st.set_option("deprecation.showPyplotGlobalUse", False)
 ROOT = Path(__file__).resolve().parent
 XRANGE = (0, 20)
 YRANGE = (-7.5, 12)
@@ -34,10 +34,12 @@ def _get_extent(points):
 
 
 def _select_dist(data, num):
-    df = data.rename(columns={
-        f"num_label_{num}": "reduced_topics",
-        f"word_label_{num}": "reduced_words",
-    }).copy()
+    df = data.rename(
+        columns={
+            f"num_label_{num}": "reduced_topics",
+            f"word_label_{num}": "reduced_words",
+        }
+    ).copy()
     df = df.loc[:, ["x", "y", "reduced_topics", "reduced_words"]]
     df["reduced_topics"] = pd.Categorical(df["reduced_topics"])
     df["reduced_words"] = pd.Categorical(df["reduced_words"])
@@ -50,24 +52,22 @@ def points(
     plotting_method,
     zooming,
     labels_type,
-    width=800, 
+    width=800,
     height=800,
 ):
     df = _select_dist(data, num_topics)
     point_size = 100.0 / np.sqrt(df.shape[0])
-    
-    dpi = plt.rcParams["figure.dpi"] 
+
+    dpi = plt.rcParams["figure.dpi"]
     fig = plt.figure(figsize=(width / dpi, height / dpi))
-    ax = fig.add_subplot(111)    
+    ax = fig.add_subplot(111)
 
     _label = "reduced_topics" if labels_type == "topic number" else "reduced_words"
     unique_labels = df[_label].unique()
     num_labels = unique_labels.shape[0]
-    color_key = _to_hex(
-        plt.get_cmap("Spectral")(np.linspace(0, 1, num_labels))
-    )
+    color_key = _to_hex(plt.get_cmap("Spectral")(np.linspace(0, 1, num_labels)))
     legend_elements = [
-        Patch(facecolor=color_key[i], label=k+1 if isinstance(k, int) else k)
+        Patch(facecolor=color_key[i], label=k + 1 if isinstance(k, int) else k)
         for i, k in enumerate(sorted(unique_labels))
     ]
 
@@ -86,8 +86,8 @@ def points(
         cvs = ds.Canvas(
             plot_width=width,
             plot_height=height,
-            x_range = XRANGE if zooming else (extent[0], extent[1]),
-            y_range = YRANGE if zooming else (extent[2], extent[3])
+            x_range=XRANGE if zooming else (extent[0], extent[1]),
+            y_range=YRANGE if zooming else (extent[2], extent[3]),
         )
         agg = cvs.points(df, "x", "y", agg=ds.count_cat(_label))
         result = ds.tf.shade(agg, color_key=color_key, how="eq_hist")
@@ -95,7 +95,7 @@ def points(
         ax.imshow(img_rgba[::-1], extent=extent)
 
     ax.set_title(f"Reduced 2D embeddings: {num_topics} labeled topics")
-    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
     ax.set(xticks=[], yticks=[])
 
 
@@ -105,28 +105,36 @@ def load_model(path="data/deciding-on-topic-reduction.csv"):
 
 
 st.title("Hierarchical topic reduction")
-st.write("""
+st.write(
+    """
 We used Top2Vec algorithm to automatically detect topics 
 present in our ProQuest Deterrence dataset containing 26,525 non-empty documents. 
 
 The model initially found 229 topics which is too much to interpret. Thus, 
 we decided to reduce the number of topics using top2vec's hierarchical topic reduction method.
-""")
+"""
+)
 
 st.sidebar.markdown("## Controls")
 st.sidebar.markdown("You can **change** the values to change the *chart*.")
 num_topic = st.sidebar.slider("Number of topics", min_value=2, max_value=20, step=1)
-st.sidebar.markdown("""
+st.sidebar.markdown(
+    """
 You can also use different approaches to plotting:
 * matplotlib
 * datashader (for large datasets)
-""")
-plotting_method = st.sidebar.selectbox("Select plotting method", ("matplotlib", "datashader"))
+"""
+)
+plotting_method = st.sidebar.selectbox(
+    "Select plotting method", ("matplotlib", "datashader")
+)
 
 st.sidebar.markdown("To *zoom in*, fill checkbox below")
 zoom = st.sidebar.checkbox("Zoomed in")
 
-labels_type = st.sidebar.selectbox("Select legend labels", ("topic number", "most common words"))
+labels_type = st.sidebar.selectbox(
+    "Select legend labels", ("topic number", "most common words")
+)
 
 df = load_model()
 plot = points(df, num_topic, plotting_method, zoom, labels_type)
