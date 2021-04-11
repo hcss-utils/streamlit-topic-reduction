@@ -34,9 +34,13 @@ def _get_extent(points):
 
 
 def _select_dist(data, num):
-    df = data.rename(columns={f"doc_top_reduced_{num}": "reduced_topics"}).copy()
-    df = df.loc[:, ~df.columns.str.contains("doc_top_reduced_")]
+    df = data.rename(columns={
+        f"num_label_{num}": "reduced_topics",
+        f"word_label_{num}": "reduced_words",
+    }).copy()
+    df = df.loc[:, ["x", "y", "reduced_topics", "reduced_words"]]
     df["reduced_topics"] = pd.Categorical(df["reduced_topics"])
+    df["reduced_words"] = pd.Categorical(df["reduced_words"])
     return df
 
 
@@ -45,6 +49,7 @@ def points(
     num_topics,
     plotting_method,
     zooming,
+    labels_type,
     width=800, 
     height=800,
 ):
@@ -55,13 +60,14 @@ def points(
     fig = plt.figure(figsize=(width / dpi, height / dpi))
     ax = fig.add_subplot(111)    
 
-    unique_labels = df["reduced_topics"].unique()
+    _label = "reduced_topics" if labels_type == "topic number" else "reduced_words"
+    unique_labels = df[_label].unique()
     num_labels = unique_labels.shape[0]
     color_key = _to_hex(
         plt.get_cmap("Spectral")(np.linspace(0, 1, num_labels))
     )
     legend_elements = [
-        Patch(facecolor=color_key[i], label=k+1)
+        Patch(facecolor=color_key[i], label=k+1 if isinstance(k, int) else k)
         for i, k in enumerate(sorted(unique_labels))
     ]
 
@@ -70,7 +76,7 @@ def points(
             k: matplotlib.colors.to_hex(color_key[i])
             for i, k in enumerate(sorted(unique_labels))
         }
-        colors = df["reduced_topics"].map(new_color_key)
+        colors = df[_label].map(new_color_key)
         ax.scatter(df["x"], df["y"], s=point_size, c=colors)
         if zooming:
             plt.xlim(XRANGE)
@@ -83,18 +89,18 @@ def points(
             x_range = XRANGE if zooming else (extent[0], extent[1]),
             y_range = YRANGE if zooming else (extent[2], extent[3])
         )
-        agg = cvs.points(df, "x", "y", agg=ds.count_cat("reduced_topics"))
+        agg = cvs.points(df, "x", "y", agg=ds.count_cat(_label))
         result = ds.tf.shade(agg, color_key=color_key, how="eq_hist")
         img_rgba = result.data.view(np.uint8).reshape(result.shape + (4,))
         ax.imshow(img_rgba[::-1], extent=extent)
 
     ax.set_title(f"Reduced 2D embeddings: {num_topics} labeled topics")
-    ax.legend(handles=legend_elements)
+    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left')
     ax.set(xticks=[], yticks=[])
 
 
 @st.cache
-def load_model(path="data/topic-reduction.csv"):
+def load_model(path="data/deciding-on-topic-reduction.csv"):
     return pd.read_csv(ROOT.parent / path)
 
 
@@ -120,6 +126,8 @@ plotting_method = st.sidebar.selectbox("Select plotting method", ("matplotlib", 
 st.sidebar.markdown("To *zoom in*, fill checkbox below")
 zoom = st.sidebar.checkbox("Zoomed in")
 
+labels_type = st.sidebar.selectbox("Select legend labels", ("topic number", "most common words"))
+
 df = load_model()
-plot = points(df, num_topic, plotting_method, zoom)
+plot = points(df, num_topic, plotting_method, zoom, labels_type)
 st.pyplot(plot)
