@@ -2,7 +2,11 @@
 
 This repository contains **streamlit** app that illustrates Top2Vec's hierarchical topic reduction method. 
 
-![alt text](data/example.png)
+![alt text](data/example_topic-numbers.png)
+
+![alt text](data/example_most-common-words.png)
+
+![alt text](data/example_another-window.png)
 
 ## Usage
 
