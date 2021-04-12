@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 from pathlib import Path
 
+st.set_page_config(layout="wide")
 st.set_option("deprecation.showPyplotGlobalUse", False)
 ROOT = Path(__file__).resolve().parent
 XRANGE = (0, 20)
