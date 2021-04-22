@@ -10,7 +10,7 @@ from pathlib import Path
 
 st.set_page_config(layout="wide")
 st.set_option("deprecation.showPyplotGlobalUse", False)
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 XRANGE = (0, 20)
 YRANGE = (-7.5, 12)
 
@@ -101,23 +101,30 @@ def points(
 
 
 @st.cache
-def load_model(path="data/deciding-on-topic-reduction.csv"):
-    return pd.read_csv(ROOT.parent / path)
+def load_model(dataset):
+    filename = (
+        "fastlearn.csv"
+        if dataset == "noun phrases"
+        else "deciding-on-topic-reduction.csv"
+    )
+    return pd.read_csv(ROOT / "data" / filename)
 
 
 st.title("Hierarchical topic reduction")
 st.write(
     """
 We used Top2Vec algorithm to automatically detect topics 
-present in our ProQuest Deterrence dataset containing 26,525 non-empty documents. 
+present in our ProQuest Deterrence dataset. 
 
-The model initially found 229 topics which is too much to interpret. Thus, 
+The model initially found 229 topics on raw text and 49 topics on noun phrases - both of which is too much to interpret. Thus, 
 we decided to reduce the number of topics using top2vec's hierarchical topic reduction method.
 """
 )
 
-st.sidebar.markdown("## Controls")
+st.sidebar.markdown("# Controls")
 st.sidebar.markdown("You can **change** the values to change the *chart*.")
+st.sidebar.markdown("We trained a model using both *raw text* and *noun phrases*.")
+dataset = st.sidebar.selectbox("Select source data", ("raw text", "noun phrases"))
 num_topic = st.sidebar.slider("Number of topics", min_value=2, max_value=20, step=1)
 st.sidebar.markdown(
     """
@@ -137,6 +144,6 @@ labels_type = st.sidebar.selectbox(
     "Select legend labels", ("topic number", "most common words")
 )
 
-df = load_model()
+df = load_model(dataset)
 plot = points(df, num_topic, plotting_method, zoom, labels_type)
 st.pyplot(plot)
