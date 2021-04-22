@@ -50,9 +50,9 @@ def _select_dist(data, num):
 def points(
     data,
     num_topics,
-    plotting_method,
-    zooming,
-    labels_type,
+    plotting_method="matplotlib",
+    zooming=False,
+    labels_type="topic number",
     width=800,
     height=800,
 ):
@@ -126,19 +126,23 @@ st.sidebar.markdown("You can **change** the values to change the *chart*.")
 st.sidebar.markdown("We trained a model using both *raw text* and *noun phrases*.")
 dataset = st.sidebar.selectbox("Select source data", ("raw text", "noun phrases"))
 num_topic = st.sidebar.slider("Number of topics", min_value=2, max_value=20, step=1)
-st.sidebar.markdown(
+if dataset == "raw text":
+    st.sidebar.markdown(
+        """
+    You can also use different approaches to plotting:
+    * matplotlib
+    * datashader (for large datasets)
     """
-You can also use different approaches to plotting:
-* matplotlib
-* datashader (for large datasets)
-"""
-)
-plotting_method = st.sidebar.selectbox(
-    "Select plotting method", ("matplotlib", "datashader")
-)
+    )
+    plotting_method = st.sidebar.selectbox(
+        "Select plotting method", ("matplotlib", "datashader")
+    )
 
-st.sidebar.markdown("To *zoom in*, fill checkbox below")
-zoom = st.sidebar.checkbox("Zoomed in")
+    st.sidebar.markdown("To *zoom in*, fill checkbox below")
+    zoom = st.sidebar.checkbox("Zoomed in")
+else:
+    plotting_method = "matplotlib"
+    zoom = False
 
 labels_type = st.sidebar.selectbox(
     "Select legend labels", ("topic number", "most common words")
