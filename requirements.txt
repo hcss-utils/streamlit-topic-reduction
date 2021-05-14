@@ -1,4 +1,4 @@
 pandas==1.2.4
-streamlit==0.81.1
+streamlit==0.82.0
 matplotlib==3.4.2
 datashader==0.12.1
